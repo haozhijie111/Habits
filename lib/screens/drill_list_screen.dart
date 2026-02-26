@@ -135,7 +135,7 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final i = widget.index;
     final lesson = widget.lesson;
     final color = _cardColors[i % _cardColors.length];
