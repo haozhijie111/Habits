@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
 
   # 音频录制与流式处理
-  record: ^5.2.0
+  record: 5.0.4
 
   # 音频权限
   permission_handler: ^11.0.1
@@ -43,8 +43,6 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.2
   intl: ^0.20.2
-
-dependency_overrides:
 
 dev_dependencies:
   flutter_test:
