@@ -1,12 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_audio/just_audio.dart';
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'package:just_audio/just_audio.dart';
 import '../main.dart';
 import '../models/drill_lesson.dart';
 import '../models/drill_library.dart';
 import '../providers/drill_session_provider.dart';
 import 'drill_practice_screen.dart';
+
+// 合成单音 WAV（复用 flute_keyboard_screen 的逻辑）
+Uint8List _synthNoteWav(String noteName, double duration) {
+  const sr = 22050;
+  double _freq(String n) {
+    const m = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11};
+    final r = RegExp(r'^([A-G][#b]?)(\d)$').firstMatch(n);
+    if (r == null) return 440.0;
+    final midi = (int.parse(r.group(2)!) + 1) * 12 + (m[r.group(1)!] ?? 0);
+    return 440.0 * math.pow(2, (midi - 69) / 12);
+  }
+  final freq = _freq(noteName);
+  final n = (duration * sr).round();
+  final fade = (sr * 0.015).round();
+  final s = List<double>.filled(n, 0.0);
+  for (int i = 0; i < n; i++) {
+    double a = 0.55;
+    if (i < fade) a *= i / fade;
+    if (i > n - fade) a *= (n - i) / fade;
+    s[i] = a * (0.55 * math.sin(2 * math.pi * freq * i / sr) +
+        0.28 * math.sin(4 * math.pi * freq * i / sr) +
+        0.12 * math.sin(6 * math.pi * freq * i / sr) +
+        0.05 * math.sin(8 * math.pi * freq * i / sr));
+  }
+  final ds = n * 2;
+  final b = ByteData(44 + ds);
+  for (final e in {0: 0x52, 1: 0x49, 2: 0x46, 3: 0x46}.entries) { b.setUint8(e.key, e.value); }
+  b.setUint32(4, 36 + ds, Endian.little);
+  for (final e in {8: 0x57, 9: 0x41, 10: 0x56, 11: 0x45}.entries) { b.setUint8(e.key, e.value); }
+  for (final e in {12: 0x66, 13: 0x6D, 14: 0x74, 15: 0x20}.entries) { b.setUint8(e.key, e.value); }
+  b.setUint32(16, 16, Endian.little); b.setUint16(20, 1, Endian.little);
+  b.setUint16(22, 1, Endian.little); b.setUint32(24, sr, Endian.little);
+  b.setUint32(28, sr * 2, Endian.little); b.setUint16(32, 2, Endian.little);
+  b.setUint16(34, 16, Endian.little);
+  for (final e in {36: 0x64, 37: 0x61, 38: 0x74, 39: 0x61}.entries) { b.setUint8(e.key, e.value); }
+  b.setUint32(40, ds, Endian.little);
+  for (int i = 0; i < n; i++) {
+    b.setInt16(44 + i * 2, (s[i] * 32767).clamp(-32768, 32767).toInt(), Endian.little);
+  }
+  return b.buffer.asUint8List();
+}
+
+class _WavSrc extends StreamAudioSource {
+  final Uint8List _b;
+  _WavSrc(this._b) : super(tag: 'drill_preview');
+  @override
+  Future<StreamAudioResponse> request([int? start, int? end]) async {
+    start ??= 0; end ??= _b.length;
+    return StreamAudioResponse(
+      sourceLength: _b.length, contentLength: end - start,
+      offset: start, stream: Stream.value(_b.sublist(start, end)),
+      contentType: 'audio/wav',
+    );
+  }
+}
 
 class DrillListScreen extends ConsumerWidget {
   const DrillListScreen({super.key});
@@ -92,20 +149,21 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
       return;
     }
     setState(() { _previewing = true; _previewBeat = 0; });
-    await _player.setAsset('assets/sounds/metronome_tick.wav');
-    await _player.setVolume(0.8);
 
     final beats = widget.lesson.beats;
     final bpm = widget.lesson.bpm;
     final beatDuration = Duration(milliseconds: (60000 / bpm).round());
 
-    // 播放每个节拍的 tick
     void playNext() {
       if (!_previewing || _previewBeat >= beats.length) {
         _stopPreview();
         return;
       }
-      _player.seek(Duration.zero).then((_) => _player.play());
+      final beat = beats[_previewBeat];
+      final wav = _synthNoteWav(beat.note, beat.duration.clamp(0.1, 0.8));
+      _player.setAudioSource(_WavSrc(wav)).then((_) {
+        _player.seek(Duration.zero).then((_) => _player.play());
+      });
       setState(() => _previewBeat++);
       _previewTimer = Timer(beatDuration, playNext);
     }

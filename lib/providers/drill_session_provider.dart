@@ -16,13 +16,16 @@ class DrillSession {
   final DrillState state;
   final DrillLesson? lesson;
   final double elapsed;
-  final int countdown;       // 剩余节拍数（倒计时用）
+  final int countdown;
   final PitchResult currentPitch;
   final DrillResult? result;
   final int currentBeatIndex;
   final String? audioPath;
-  final bool recordAudio;    // 是否录音
-  final String? errorMsg;    // 错误信息
+  final bool recordAudio;
+  final String? errorMsg;
+  final int repeatCount;   // 循环次数设置
+  final int currentRepeat; // 当前第几次
+  final int bpmOverride;   // 用户自定义BPM（0=用课程默认）
 
   const DrillSession({
     this.state = DrillState.idle,
@@ -35,6 +38,9 @@ class DrillSession {
     this.audioPath,
     this.recordAudio = false,
     this.errorMsg,
+    this.repeatCount = 3,
+    this.currentRepeat = 0,
+    this.bpmOverride = 0,
   });
 
   DrillSession copyWith({
@@ -48,6 +54,9 @@ class DrillSession {
     String? audioPath,
     bool? recordAudio,
     String? errorMsg,
+    int? repeatCount,
+    int? currentRepeat,
+    int? bpmOverride,
   }) =>
       DrillSession(
         state: state ?? this.state,
@@ -60,7 +69,12 @@ class DrillSession {
         audioPath: audioPath ?? this.audioPath,
         recordAudio: recordAudio ?? this.recordAudio,
         errorMsg: errorMsg,
+        repeatCount: repeatCount ?? this.repeatCount,
+        currentRepeat: currentRepeat ?? this.currentRepeat,
+        bpmOverride: bpmOverride ?? this.bpmOverride,
       );
+
+  int get effectiveBpm => bpmOverride > 0 ? bpmOverride : (lesson?.bpm ?? 80);
 }
 
 class DrillSessionNotifier extends StateNotifier<DrillSession> {
@@ -80,23 +94,28 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
   }
 
   void selectLesson(DrillLesson lesson) {
-    state = DrillSession(lesson: lesson, state: DrillState.idle, recordAudio: state.recordAudio);
+    state = DrillSession(
+      lesson: lesson,
+      state: DrillState.idle,
+      recordAudio: state.recordAudio,
+      repeatCount: state.repeatCount,
+      bpmOverride: state.bpmOverride,
+    );
   }
 
-  void setRecordAudio(bool value) {
-    state = state.copyWith(recordAudio: value);
-  }
+  void setRecordAudio(bool value) => state = state.copyWith(recordAudio: value);
+  void setRepeatCount(int value) => state = state.copyWith(repeatCount: value.clamp(1, 10));
+  void setBpmOverride(int value) => state = state.copyWith(bpmOverride: value);
 
   /// 点击开始：节拍器打2拍倒计时，再正式录音
   Future<void> startCountdown() async {
     if (state.lesson == null) return;
-    final bpm = state.lesson!.bpm;
+    final bpm = state.effectiveBpm;
     final beatInterval = Duration(milliseconds: (60000 / bpm).round());
 
     _beatCount = 2;
-    state = state.copyWith(state: DrillState.countdown, countdown: _beatCount);
+    state = state.copyWith(state: DrillState.countdown, countdown: _beatCount, currentRepeat: 1);
 
-    // 启动节拍器（强制开启，不依赖用户设置）
     _metronome.setEnabled(true);
     _metronome.setVolume(0.8);
     _metronome.start(bpm: bpm);
@@ -146,18 +165,29 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
       currentBeatIndex: 0,
     );
 
+    final totalWithRepeats = lesson.totalDuration * state.repeatCount;
+
     _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
       _elapsed += 0.05;
+      // 当前循环内的时间偏移
+      final loopDur = lesson.totalDuration;
+      final loopElapsed = _elapsed % loopDur;
+      final currentRepeat = (_elapsed / loopDur).floor() + 1;
+
       final beats = lesson.beats;
       int idx = beats.length - 1;
       for (int i = 0; i < beats.length; i++) {
-        if (_elapsed < beats[i].time + beats[i].duration) {
+        if (loopElapsed < beats[i].time + beats[i].duration) {
           idx = i;
           break;
         }
       }
-      state = state.copyWith(elapsed: _elapsed, currentBeatIndex: idx);
-      if (_elapsed >= lesson.totalDuration + 0.5) {
+      state = state.copyWith(
+        elapsed: _elapsed,
+        currentBeatIndex: idx,
+        currentRepeat: currentRepeat.clamp(1, state.repeatCount),
+      );
+      if (_elapsed >= totalWithRepeats + 0.3) {
         _finishRecording();
       }
     });
@@ -202,9 +232,13 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
     _metronome.stop();
     _comparator = null;
     _elapsed = 0;
-    final lesson = state.lesson;
-    final recordAudio = state.recordAudio;
-    state = DrillSession(lesson: lesson, state: DrillState.idle, recordAudio: recordAudio);
+    state = DrillSession(
+      lesson: state.lesson,
+      state: DrillState.idle,
+      recordAudio: state.recordAudio,
+      repeatCount: state.repeatCount,
+      bpmOverride: state.bpmOverride,
+    );
   }
 
   @override

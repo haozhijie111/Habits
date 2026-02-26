@@ -249,8 +249,61 @@ class _IdleControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bpm = session.effectiveBpm;
     return Column(
       children: [
+        // BPM 调节
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: KidColors.card,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+          ),
+          child: Row(
+            children: [
+              const Text('🥁', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              const Text('速度', style: TextStyle(color: KidColors.textMid, fontSize: 13, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              _SmallBtn(label: '−', onTap: () => notifier.setBpmOverride((bpm - 5).clamp(40, 200))),
+              SizedBox(
+                width: 70,
+                child: Center(child: Text('$bpm BPM',
+                    style: const TextStyle(color: KidColors.textDark, fontSize: 13, fontWeight: FontWeight.w800))),
+              ),
+              _SmallBtn(label: '+', onTap: () => notifier.setBpmOverride((bpm + 5).clamp(40, 200))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // 循环次数
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: KidColors.card,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+          ),
+          child: Row(
+            children: [
+              const Text('🔁', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              const Text('循环', style: TextStyle(color: KidColors.textMid, fontSize: 13, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              _SmallBtn(label: '−', onTap: () => notifier.setRepeatCount(session.repeatCount - 1)),
+              SizedBox(
+                width: 50,
+                child: Center(child: Text('${session.repeatCount} 次',
+                    style: const TextStyle(color: KidColors.textDark, fontSize: 13, fontWeight: FontWeight.w800))),
+              ),
+              _SmallBtn(label: '+', onTap: () => notifier.setRepeatCount(session.repeatCount + 1)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
         // 录音开关
         GestureDetector(
           onTap: () => notifier.setRecordAudio(!session.recordAudio),
@@ -258,63 +311,61 @@ class _IdleControls extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: session.recordAudio
-                  ? KidColors.primary.withValues(alpha: 0.12)
-                  : Colors.grey.withValues(alpha: 0.1),
+              color: session.recordAudio ? KidColors.primary.withValues(alpha: 0.12) : Colors.grey.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: session.recordAudio ? KidColors.primary : KidColors.textLight,
-              ),
+              border: Border.all(color: session.recordAudio ? KidColors.primary : KidColors.textLight),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  session.recordAudio ? '🎙' : '🔇',
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(session.recordAudio ? '🎙' : '🔇', style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
-                Text(
-                  session.recordAudio ? '录音 开' : '录音 关',
-                  style: TextStyle(
-                    color: session.recordAudio ? KidColors.primary : KidColors.textLight,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text(session.recordAudio ? '录音 开' : '录音 关',
+                    style: TextStyle(
+                        color: session.recordAudio ? KidColors.primary : KidColors.textLight,
+                        fontSize: 14, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
         ),
         const SizedBox(height: 20),
-        // 开始按钮
         GestureDetector(
           onTap: () => notifier.startCountdown(),
           child: Container(
-            width: 80,
-            height: 80,
+            width: 80, height: 80,
             decoration: BoxDecoration(
-              color: KidColors.primary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: KidColors.primary.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
+              color: KidColors.primary, shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: KidColors.primary.withValues(alpha: 0.4), blurRadius: 16, spreadRadius: 2)],
             ),
-            child: const Center(
-              child: Text('▶', style: TextStyle(color: Colors.white, fontSize: 32)),
-            ),
+            child: const Center(child: Text('▶', style: TextStyle(color: Colors.white, fontSize: 32))),
           ),
         ),
         const SizedBox(height: 10),
-        const Text(
-          '点击开始练习',
-          style: TextStyle(color: KidColors.textMid, fontSize: 14, fontWeight: FontWeight.w600),
-        ),
+        const Text('点击开始练习',
+            style: TextStyle(color: KidColors.textMid, fontSize: 14, fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+}
+
+class _SmallBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _SmallBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: KidColors.secondary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Center(child: Text(label,
+            style: const TextStyle(color: KidColors.secondary, fontSize: 18, fontWeight: FontWeight.w800))),
+      ),
     );
   }
 }
@@ -405,22 +456,31 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = lesson.totalDuration;
-    final progress =
-        total == 0 ? 0.0 : (session.elapsed / total).clamp(0.0, 1.0);
+    final loopDur = lesson.totalDuration;
+    final totalDur = loopDur * session.repeatCount;
+    final progress = totalDur == 0 ? 0.0 : (session.elapsed / totalDur).clamp(0.0, 1.0);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '第 ${session.currentRepeat} / ${session.repeatCount} 次',
+                style: const TextStyle(color: KidColors.textMid, fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 12,
               backgroundColor: KidColors.textLight.withValues(alpha: 0.3),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(KidColors.secondary),
+              valueColor: const AlwaysStoppedAnimation<Color>(KidColors.secondary),
             ),
           ),
           const SizedBox(height: 6),
@@ -428,11 +488,9 @@ class _ProgressBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${session.elapsed.toStringAsFixed(1)}s',
-                  style: const TextStyle(
-                      color: KidColors.textLight, fontSize: 11)),
-              Text('${total.toStringAsFixed(1)}s',
-                  style: const TextStyle(
-                      color: KidColors.textLight, fontSize: 11)),
+                  style: const TextStyle(color: KidColors.textLight, fontSize: 11)),
+              Text('${totalDur.toStringAsFixed(1)}s',
+                  style: const TextStyle(color: KidColors.textLight, fontSize: 11)),
             ],
           ),
         ],

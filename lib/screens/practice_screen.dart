@@ -39,71 +39,73 @@ class PracticeScreen extends ConsumerWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w800)),
       ),
-      body: Column(
-        children: [
-          _SongSelector(
-            currentSong: session.currentSong,
-            enabled: session.state != RecordingState.recording,
-            onSelect: (song) =>
-                ref.read(practiceSessionProvider.notifier).selectSong(song),
-          ),
-          _ScoreScrollBar(
-            scoreSheet: session.currentSong.notes,
-            elapsed: session.elapsed,
-            isRecording: session.state == RecordingState.recording,
-          ),
-          const SizedBox(height: 6),
-          TunerGauge(result: session.currentPitch),
-          const Spacer(),
-          _MetronomeBar(metro: metro, bpm: session.currentSong.bpm),
-          const SizedBox(height: 16),
-          if (session.state == RecordingState.recording)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: KidColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '⏱ ${_formatTime(session.elapsed)}',
-                style: const TextStyle(
-                    color: KidColors.primary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800),
-              ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _SongSelector(
+              currentSong: session.currentSong,
+              enabled: session.state != RecordingState.recording,
+              onSelect: (song) =>
+                  ref.read(practiceSessionProvider.notifier).selectSong(song),
             ),
-          const SizedBox(height: 20),
-          _RecordButton(
-            state: session.state,
-            onStart: () {
-              if (metro.enabled) {
-                ref
-                    .read(metronomeProvider.notifier)
-                    .startWith(metro.bpm);
-              }
-              ref.read(practiceSessionProvider.notifier).startRecording(
-                bpm: metro.enabled ? metro.bpm : null,
-              );
-            },
-            onStop: () {
-              ref.read(metronomeProvider.notifier).stopBeat();
-              ref.read(practiceSessionProvider.notifier).stopRecording();
-            },
-          ),
-          const SizedBox(height: 14),
-          Text(
-            session.state == RecordingState.recording
-                ? '吹完后点停止 🎶'
-                : session.state == RecordingState.idle
-                    ? '点击开始练习吧！'
-                    : '',
-            style: const TextStyle(
-                color: KidColors.textMid,
-                fontSize: 14,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 36),
-        ],
+            _ScoreScrollBar(
+              scoreSheet: session.currentSong.notes,
+              elapsed: session.elapsed,
+              isRecording: session.state == RecordingState.recording,
+            ),
+            const SizedBox(height: 6),
+            TunerGauge(result: session.currentPitch),
+            const SizedBox(height: 16),
+            _MetronomeBar(metro: metro, bpm: session.currentSong.bpm),
+            const SizedBox(height: 16),
+            if (session.state == RecordingState.recording)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: KidColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '⏱ ${_formatTime(session.elapsed)}',
+                  style: const TextStyle(
+                      color: KidColors.primary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800),
+                ),
+              ),
+            const SizedBox(height: 20),
+            _RecordButton(
+              state: session.state,
+              onStart: () {
+                if (metro.enabled) {
+                  ref
+                      .read(metronomeProvider.notifier)
+                      .startWith(metro.bpm);
+                }
+                ref.read(practiceSessionProvider.notifier).startRecording(
+                  bpm: metro.enabled ? metro.bpm : null,
+                );
+              },
+              onStop: () {
+                ref.read(metronomeProvider.notifier).stopBeat();
+                ref.read(practiceSessionProvider.notifier).stopRecording();
+              },
+            ),
+            const SizedBox(height: 14),
+            Text(
+              session.state == RecordingState.recording
+                  ? '吹完后点停止 🎶'
+                  : session.state == RecordingState.idle
+                      ? '点击开始练习吧！'
+                      : '',
+              style: const TextStyle(
+                  color: KidColors.textMid,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 36),
+          ],
+        ),
       ),
     );
   }
