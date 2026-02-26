@@ -28,7 +28,7 @@ dependencies:
   camera: ^0.10.5+9
 
   # FFmpeg 视频合成
-  ffmpeg_kit_flutter_min: ^6.0.3
+  ffmpeg_kit_flutter_new: ^0.2.0
 
   # 相册保存
   gal: ^2.3.0
