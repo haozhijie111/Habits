@@ -20,7 +20,11 @@ class MetronomeService {
 
   void setEnabled(bool value) {
     _enabled = value;
-    if (!value) _stop();
+    if (!value) {
+      _stop();
+    } else {
+      _start();
+    }
   }
 
   void setVolume(double value) {
