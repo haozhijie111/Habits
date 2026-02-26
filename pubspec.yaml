@@ -44,6 +44,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   intl: ^0.20.2
 
+dependency_overrides:
+  record_platform_interface: 1.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
