@@ -4,6 +4,7 @@ import 'screens/practice_screen.dart';
 import 'screens/drill_list_screen.dart';
 import 'screens/record_screen.dart';
 import 'screens/my_screen.dart';
+import 'screens/flute_keyboard_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: FluteApp()));
@@ -90,6 +91,7 @@ class _MainShellState extends State<MainShell> {
   static const _pages = [
     PracticeScreen(),
     DrillListScreen(),
+    FluteKeyboardScreen(),
     RecordScreen(),
     MyScreen(),
   ];
@@ -112,6 +114,10 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: Text('🏋️', style: TextStyle(fontSize: 22)),
             label: '专项',
+          ),
+          NavigationDestination(
+            icon: Text('🎹', style: TextStyle(fontSize: 22)),
+            label: '玩笛子',
           ),
           NavigationDestination(
             icon: Text('📹', style: TextStyle(fontSize: 22)),
