@@ -159,6 +159,16 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
 
     _elapsed = 0;
     _comparator = DrillComparator(lesson: lesson);
+
+    // 按用户设定 BPM 与课程原始 BPM 的比例缩放进度速度
+    final bpm = state.effectiveBpm;
+    final speedRatio = bpm / lesson.bpm;
+
+    // 录音阶段继续播放节拍器
+    _metronome.setEnabled(true);
+    _metronome.setVolume(0.8);
+    _metronome.start(bpm: bpm);
+
     state = state.copyWith(
       state: DrillState.recording,
       elapsed: 0,
@@ -168,7 +178,7 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
     final totalWithRepeats = lesson.totalDuration * state.repeatCount;
 
     _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      _elapsed += 0.05;
+      _elapsed += 0.05 * speedRatio;
       // 当前循环内的时间偏移
       final loopDur = lesson.totalDuration;
       final loopElapsed = _elapsed % loopDur;
@@ -201,6 +211,7 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
   void _finishRecording() {
     _ticker?.cancel();
     _pitchSub?.cancel();
+    _metronome.stop();
     _audio.stop();
     _stopFileRecording();
 
