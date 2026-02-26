@@ -45,7 +45,7 @@ dependencies:
   intl: ^0.20.2
 
 dependency_overrides:
-  record_platform_interface: 1.4.0
+  record_linux: 0.8.0
 
 dev_dependencies:
   flutter_test:
