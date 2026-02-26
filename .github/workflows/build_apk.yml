@@ -16,10 +16,20 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: 缓存 Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.1'
           channel: 'stable'
+          cache: true
 
       - name: 安装依赖
         run: flutter pub get
