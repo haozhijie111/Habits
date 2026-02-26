@@ -40,6 +40,9 @@ dependencies:
   # 节拍器音频播放
   just_audio: ^0.9.40
 
+  # 视频播放
+  video_player: ^2.8.6
+
   # UI
   cupertino_icons: ^1.0.2
   intl: ^0.20.2

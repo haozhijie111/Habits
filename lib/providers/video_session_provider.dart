@@ -5,6 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../services/video_recording_service.dart';
 import '../services/ffmpeg_composer_service.dart';
+import '../services/check_in_storage.dart';
+import '../models/check_in_record.dart';
 
 enum VideoState { idle, recording, processing, done, error }
 
@@ -45,6 +47,8 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
   final VideoRecordingService _video;
   final FFmpegComposerService _composer;
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final CheckInStorage _storage = CheckInStorage();
+  String _songTitle = '打卡';
 
   VideoSessionNotifier(this._video, this._composer)
       : super(const VideoSession());
@@ -69,12 +73,25 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
     state = state.copyWith(state: VideoState.recording);
   }
 
+  void setSongTitle(String title) => _songTitle = title;
+
   Future<void> stopAndCompose({
     required double score,
     String? bgmPath,
   }) async {
+    final now = DateTime.now();
     if (state.mode == CheckInMode.audio) {
       final audioPath = await _audioRecorder.stop();
+      if (audioPath != null) {
+        await _storage.save(CheckInRecord(
+          id: now.millisecondsSinceEpoch.toString(),
+          createdAt: now,
+          filePath: audioPath,
+          type: 'audio',
+          score: score,
+          songTitle: _songTitle,
+        ));
+      }
       state = state.copyWith(
         state: VideoState.done,
         outputPath: audioPath,
@@ -91,7 +108,7 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
 
     state = state.copyWith(state: VideoState.processing, progress: 0);
 
-    final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final date = DateFormat('yyyy-MM-dd').format(now);
     final out = await _composer.compose(
       videoPath: rawPath,
       bgmPath: bgmPath,
@@ -100,6 +117,14 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
     );
 
     if (out != null) {
+      await _storage.save(CheckInRecord(
+        id: now.millisecondsSinceEpoch.toString(),
+        createdAt: now,
+        filePath: out,
+        type: 'video',
+        score: score,
+        songTitle: _songTitle,
+      ));
       state = state.copyWith(state: VideoState.done, outputPath: out, progress: 1);
     } else {
       state = state.copyWith(state: VideoState.error, errorMsg: 'FFmpeg 合成失败');

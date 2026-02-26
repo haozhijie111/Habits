@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/practice_screen.dart';
 import 'screens/drill_list_screen.dart';
 import 'screens/record_screen.dart';
+import 'screens/my_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: FluteApp()));
@@ -90,6 +91,7 @@ class _MainShellState extends State<MainShell> {
     PracticeScreen(),
     DrillListScreen(),
     RecordScreen(),
+    MyScreen(),
   ];
 
   @override
@@ -114,6 +116,10 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: Text('📹', style: TextStyle(fontSize: 22)),
             label: '打卡',
+          ),
+          NavigationDestination(
+            icon: Text('👤', style: TextStyle(fontSize: 22)),
+            label: '我的',
           ),
         ],
       ),
