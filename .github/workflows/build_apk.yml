@@ -31,6 +31,9 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: 禁用 Linux desktop
+        run: flutter config --no-enable-linux-desktop
+
       - name: 安装依赖
         run: flutter pub upgrade
 

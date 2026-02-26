@@ -45,7 +45,6 @@ dependencies:
   intl: ^0.20.2
 
 dependency_overrides:
-  record_linux: 0.8.0
 
 dev_dependencies:
   flutter_test:
