@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:async';
 import 'package:just_audio/just_audio.dart';
 import '../main.dart';
 import '../models/drill_lesson.dart';
@@ -80,49 +79,46 @@ class _LessonCard extends ConsumerStatefulWidget {
 
 class _LessonCardState extends ConsumerState<_LessonCard> {
   final AudioPlayer _player = AudioPlayer();
-  Timer? _previewTimer;
   bool _previewing = false;
-  int _previewBeat = 0;
 
   @override
   void dispose() {
-    _previewTimer?.cancel();
     _player.dispose();
     super.dispose();
   }
 
   Future<void> _togglePreview() async {
     if (_previewing) {
-      _stopPreview();
+      setState(() => _previewing = false);
+      await _player.stop();
       return;
     }
-    setState(() { _previewing = true; _previewBeat = 0; });
+    setState(() => _previewing = true);
+    await _runPreview();
+    if (mounted) setState(() => _previewing = false);
+  }
 
+  Future<void> _runPreview() async {
     final beats = widget.lesson.beats;
-    final bpm = widget.lesson.bpm;
-    final beatDuration = Duration(milliseconds: (60000 / bpm).round());
-
-    Future<void> playNext() async {
-      if (!_previewing || _previewBeat >= beats.length) {
-        _stopPreview();
-        return;
-      }
-      final beat = beats[_previewBeat];
+    final beatMs = (60000 / widget.lesson.bpm).round();
+    for (final beat in beats) {
+      if (!_previewing) return;
+      final start = DateTime.now();
       try {
         await _player.setAsset(_noteAsset(beat.note));
         await _player.seek(Duration.zero);
         await _player.play();
       } catch (_) {}
-      setState(() => _previewBeat++);
-      _previewTimer = Timer(beatDuration, playNext);
+      final elapsed = DateTime.now().difference(start).inMilliseconds;
+      final wait = beatMs - elapsed;
+      if (wait > 0) await Future.delayed(Duration(milliseconds: wait));
     }
-    playNext();
   }
 
   void _stopPreview() {
-    _previewTimer?.cancel();
+    _previewing = false;
     _player.stop();
-    if (mounted) setState(() { _previewing = false; _previewBeat = 0; });
+    if (mounted) setState(() {});
   }
 
   static const _emojis = ['🎵', '🎶', '🎼', '🎹', '🎸'];

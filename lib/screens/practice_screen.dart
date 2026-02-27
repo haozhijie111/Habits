@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart';
 import '../main.dart';
 import '../models/score_note.dart';
 import '../models/song_library.dart';
 import '../providers/practice_session_provider.dart';
 import '../providers/metronome_provider.dart';
-import '../services/song_synthesizer.dart';
 import 'widgets/tuner_gauge.dart';
 import 'session_result_screen.dart';
 
@@ -134,25 +134,30 @@ class _SongSelector extends StatefulWidget {
 }
 
 class _SongSelectorState extends State<_SongSelector> {
-  final SongSynthesizer _synth = SongSynthesizer();
+  final AudioPlayer _player = AudioPlayer();
   String? _previewingId;
 
   @override
   void dispose() {
-    _synth.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   Future<void> _togglePreview(Song song) async {
     if (_previewingId == song.id) {
-      await _synth.stop();
+      await _player.stop();
       setState(() => _previewingId = null);
       return;
     }
-    await _synth.stop();
+    await _player.stop();
     setState(() => _previewingId = song.id);
-    final notes = song.notes.map((n) => (note: n.note, time: n.time, duration: n.duration)).toList();
-    await _synth.play(notes);
+    try {
+      await _player.setAsset('assets/sounds/song_${song.id}.wav');
+      await _player.seek(Duration.zero);
+      await _player.play();
+      await _player.playerStateStream
+          .firstWhere((s) => s.processingState == ProcessingState.completed);
+    } catch (_) {}
     if (mounted) setState(() => _previewingId = null);
   }
 
