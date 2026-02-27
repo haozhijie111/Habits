@@ -78,6 +78,12 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
   bool _previewing = false;
 
   @override
+  void initState() {
+    super.initState();
+    _player.setAsset('assets/sounds/${widget.lesson.id}.wav');
+  }
+
+  @override
   void dispose() {
     _player.dispose();
     super.dispose();
@@ -91,12 +97,14 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
     }
     setState(() => _previewing = true);
     try {
-      await _player.setAsset('assets/sounds/${widget.lesson.id}.wav');
       await _player.seek(Duration.zero);
       await _player.play();
       await _player.playerStateStream
           .firstWhere((s) => s.processingState == ProcessingState.completed);
-    } catch (_) {}
+    } catch (e) {
+      // ignore: avoid_print
+      print('[drill preview error] $e');
+    }
     if (mounted) setState(() => _previewing = false);
   }
 

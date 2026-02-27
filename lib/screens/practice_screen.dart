@@ -136,6 +136,16 @@ class _SongSelector extends StatefulWidget {
 class _SongSelectorState extends State<_SongSelector> {
   final AudioPlayer _player = AudioPlayer();
   String? _previewingId;
+  String? _loadedAsset;
+
+  @override
+  void initState() {
+    super.initState();
+    // 预加载第一首歌
+    final firstId = SongLibrary.all.first.id;
+    _loadedAsset = 'assets/sounds/song_$firstId.wav';
+    _player.setAsset(_loadedAsset!);
+  }
 
   @override
   void dispose() {
@@ -152,12 +162,19 @@ class _SongSelectorState extends State<_SongSelector> {
     await _player.stop();
     setState(() => _previewingId = song.id);
     try {
-      await _player.setAsset('assets/sounds/song_${song.id}.wav');
+      final asset = 'assets/sounds/song_${song.id}.wav';
+      if (_loadedAsset != asset) {
+        await _player.setAsset(asset);
+        _loadedAsset = asset;
+      }
       await _player.seek(Duration.zero);
-      await _player.play();
-      await _player.playerStateStream
-          .firstWhere((s) => s.processingState == ProcessingState.completed);
-    } catch (_) {}
+      _player.play();
+      final dur = _player.duration ?? const Duration(seconds: 10);
+      await Future.delayed(dur + const Duration(milliseconds: 200));
+    } catch (e) {
+      // ignore: avoid_print
+      print('[preview error] $e');
+    }
     if (mounted) setState(() => _previewingId = null);
   }
 
