@@ -27,7 +27,7 @@ class PitchDetector {
 
     // 2. 计算 RMS 能量，过滤静音
     final rms = _calcRms(samples);
-    if (rms < 0.01) return PitchResult.empty;
+    if (rms < 0.03) return PitchResult.empty;
 
     // 3. 加 Hann 窗，减少频谱泄漏
     final windowed = _applyHannWindow(samples);

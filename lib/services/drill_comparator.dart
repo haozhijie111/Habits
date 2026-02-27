@@ -73,8 +73,8 @@ class DrillComparator {
       );
     }
 
-    final active = window.where((f) => f.pitch.confidence > 0.1).toList();
-    final hasSound = active.length / window.length > 0.3;
+    final active = window.where((f) => f.pitch.confidence > 0.3).toList();
+    final hasSound = active.length / window.length > 0.2;
 
     if (!hasSound) {
       return BeatJudgement(

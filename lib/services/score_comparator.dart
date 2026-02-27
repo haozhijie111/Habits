@@ -71,9 +71,9 @@ class ScoreComparator {
       );
     }
 
-    // 有声音的帧（置信度 > 0.1）
+    // 有声音的帧（置信度 > 0.3）
     final activeFrames = windowFrames
-        .where((f) => f.pitch.confidence > 0.1)
+        .where((f) => f.pitch.confidence > 0.3)
         .toList();
 
     if (activeFrames.isEmpty) {
