@@ -1,9 +1,5 @@
-import 'dart:io';
-import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import '../main.dart';
 
 // ── 音符定义 ──────────────────────────────────────────────────────────────────
@@ -27,49 +23,11 @@ const _notes = [
   _FluteNote(solfege: "3'", noteName: 'E5', color: Color(0xFFFFE030)),
 ];
 
-// ── 音频合成 ──────────────────────────────────────────────────────────────────
-double _noteToFreq(String note) {
-  const m = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11};
-  final r = RegExp(r'^([A-G][#b]?)(\d)$').firstMatch(note);
-  if (r == null) return 440.0;
-  final midi = (int.parse(r.group(2)!) + 1) * 12 + (m[r.group(1)!] ?? 0);
-  return 440.0 * math.pow(2, (midi - 69) / 12);
+// 音符名 -> asset 路径
+String _noteAsset(String noteName) {
+  final fname = noteName.replaceAll('#', 's');
+  return 'assets/sounds/note_$fname.wav';
 }
-
-Uint8List _buildWav(String noteName) {
-  const sr = 22050;
-  const dur = 0.65;
-  final freq = _noteToFreq(noteName);
-  final n = (dur * sr).round();
-  final fade = (sr * 0.015).round();
-  final s = List<double>.filled(n, 0.0);
-  for (int i = 0; i < n; i++) {
-    double a = 0.55;
-    if (i < fade) a *= i / fade;
-    if (i > n - fade) a *= (n - i) / fade;
-    s[i] = a * (0.55 * math.sin(2 * math.pi * freq * i / sr) +
-        0.28 * math.sin(4 * math.pi * freq * i / sr) +
-        0.12 * math.sin(6 * math.pi * freq * i / sr) +
-        0.05 * math.sin(8 * math.pi * freq * i / sr));
-  }
-  final ds = n * 2;
-  final b = ByteData(44 + ds);
-  for (final e in {0: 0x52, 1: 0x49, 2: 0x46, 3: 0x46}.entries) b.setUint8(e.key, e.value);
-  b.setUint32(4, 36 + ds, Endian.little);
-  for (final e in {8: 0x57, 9: 0x41, 10: 0x56, 11: 0x45}.entries) b.setUint8(e.key, e.value);
-  for (final e in {12: 0x66, 13: 0x6D, 14: 0x74, 15: 0x20}.entries) b.setUint8(e.key, e.value);
-  b.setUint32(16, 16, Endian.little); b.setUint16(20, 1, Endian.little);
-  b.setUint16(22, 1, Endian.little); b.setUint32(24, sr, Endian.little);
-  b.setUint32(28, sr * 2, Endian.little); b.setUint16(32, 2, Endian.little);
-  b.setUint16(34, 16, Endian.little);
-  for (final e in {36: 0x64, 37: 0x61, 38: 0x74, 39: 0x61}.entries) b.setUint8(e.key, e.value);
-  b.setUint32(40, ds, Endian.little);
-  for (int i = 0; i < n; i++) {
-    b.setInt16(44 + i * 2, (s[i] * 32767).clamp(-32768, 32767).toInt(), Endian.little);
-  }
-  return b.buffer.asUint8List();
-}
-
 
 // ── 主页面 ────────────────────────────────────────────────────────────────────
 class FluteKeyboardScreen extends StatefulWidget {
@@ -92,10 +50,7 @@ class _FluteKeyboardScreenState extends State<FluteKeyboardScreen> {
       _history.add(note.solfege);
       if (_history.length > 24) _history.removeAt(0);
     });
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/flute_note.wav');
-    await file.writeAsBytes(_buildWav(note.noteName));
-    await _player.setFilePath(file.path);
+    await _player.setAsset(_noteAsset(note.noteName));
     await _player.seek(Duration.zero);
     await _player.play();
     await Future.delayed(const Duration(milliseconds: 550));
