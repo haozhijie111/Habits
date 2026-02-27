@@ -7,10 +7,6 @@ import '../models/drill_library.dart';
 import '../providers/drill_session_provider.dart';
 import 'drill_practice_screen.dart';
 
-String _noteAsset(String noteName) {
-  final fname = noteName.replaceAll('#', 's');
-  return 'assets/sounds/note_$fname.wav';
-}
 
 class DrillListScreen extends ConsumerWidget {
   const DrillListScreen({super.key});
@@ -94,25 +90,14 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
       return;
     }
     setState(() => _previewing = true);
-    await _runPreview();
+    try {
+      await _player.setAsset('assets/sounds/${widget.lesson.id}.wav');
+      await _player.seek(Duration.zero);
+      await _player.play();
+      await _player.playerStateStream
+          .firstWhere((s) => s.processingState == ProcessingState.completed);
+    } catch (_) {}
     if (mounted) setState(() => _previewing = false);
-  }
-
-  Future<void> _runPreview() async {
-    final beats = widget.lesson.beats;
-    final beatMs = (60000 / widget.lesson.bpm).round();
-    for (final beat in beats) {
-      if (!_previewing) return;
-      final start = DateTime.now();
-      try {
-        await _player.setAsset(_noteAsset(beat.note));
-        await _player.seek(Duration.zero);
-        await _player.play();
-      } catch (_) {}
-      final elapsed = DateTime.now().difference(start).inMilliseconds;
-      final wait = beatMs - elapsed;
-      if (wait > 0) await Future.delayed(Duration(milliseconds: wait));
-    }
   }
 
   void _stopPreview() {
