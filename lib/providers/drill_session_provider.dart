@@ -175,19 +175,24 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
       currentBeatIndex: 0,
     );
 
-    final totalWithRepeats = lesson.totalDuration * state.repeatCount;
+    const gapDuration = 0.5; // 每次循环结束后的停顿（秒）
+    final loopDur = lesson.totalDuration;
+    final loopWithGap = loopDur + gapDuration;
+    final totalWithRepeats = loopWithGap * state.repeatCount;
 
     _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
       _elapsed += 0.05 * speedRatio;
-      // 当前循环内的时间偏移
-      final loopDur = lesson.totalDuration;
-      final loopElapsed = _elapsed % loopDur;
-      final currentRepeat = (_elapsed / loopDur).floor() + 1;
+      // 当前循环内的时间偏移（含间隔）
+      final loopElapsed = _elapsed % loopWithGap;
+      final currentRepeat = (_elapsed / loopWithGap).floor() + 1;
+
+      // 在间隔期间停在最后一拍
+      final effectiveElapsed = loopElapsed.clamp(0.0, loopDur);
 
       final beats = lesson.beats;
       int idx = beats.length - 1;
       for (int i = 0; i < beats.length; i++) {
-        if (loopElapsed < beats[i].time + beats[i].duration) {
+        if (effectiveElapsed < beats[i].time + beats[i].duration) {
           idx = i;
           break;
         }

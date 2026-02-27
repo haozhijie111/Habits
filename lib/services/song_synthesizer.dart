@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// 将音符名称转换为频率（Hz）
 double noteToFreq(String note) {
@@ -77,25 +79,6 @@ Uint8List _samplesToWav(List<double> samples, int sampleRate) {
   return buf.buffer.asUint8List();
 }
 
-/// 内存 AudioSource，用于 just_audio 播放内存中的 WAV 数据
-class _BytesAudioSource extends StreamAudioSource {
-  final Uint8List _bytes;
-  _BytesAudioSource(this._bytes) : super(tag: 'synth');
-
-  @override
-  Future<StreamAudioResponse> request([int? start, int? end]) async {
-    start ??= 0;
-    end ??= _bytes.length;
-    return StreamAudioResponse(
-      sourceLength: _bytes.length,
-      contentLength: end - start,
-      offset: start,
-      stream: Stream.value(_bytes.sublist(start, end)),
-      contentType: 'audio/wav',
-    );
-  }
-}
-
 /// 曲目合成器：根据音符序列生成 WAV 并用 just_audio 播放
 class SongSynthesizer {
   final AudioPlayer _player = AudioPlayer();
@@ -129,9 +112,16 @@ class SongSynthesizer {
     }
 
     final wav = _samplesToWav(mixed, _sampleRate);
-    await _player.setAudioSource(_BytesAudioSource(wav));
+    // 写临时文件，避免 Android ExoPlayer 处理 StreamAudioSource 的兼容问题
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/preview_song.wav');
+    await file.writeAsBytes(wav);
+    await _player.setFilePath(file.path);
     await _player.seek(Duration.zero);
     await _player.play();
+    // 等待播放完成
+    await _player.playerStateStream
+        .firstWhere((s) => s.processingState == ProcessingState.completed);
   }
 
   Future<void> stop() async {

@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../main.dart';
 
 // ── 音符定义 ──────────────────────────────────────────────────────────────────
@@ -68,19 +70,6 @@ Uint8List _buildWav(String noteName) {
   return b.buffer.asUint8List();
 }
 
-class _WavSource extends StreamAudioSource {
-  final Uint8List _b;
-  _WavSource(this._b) : super(tag: 'flute');
-  @override
-  Future<StreamAudioResponse> request([int? start, int? end]) async {
-    start ??= 0; end ??= _b.length;
-    return StreamAudioResponse(
-      sourceLength: _b.length, contentLength: end - start,
-      offset: start, stream: Stream.value(_b.sublist(start, end)),
-      contentType: 'audio/wav',
-    );
-  }
-}
 
 // ── 主页面 ────────────────────────────────────────────────────────────────────
 class FluteKeyboardScreen extends StatefulWidget {
@@ -103,7 +92,10 @@ class _FluteKeyboardScreenState extends State<FluteKeyboardScreen> {
       _history.add(note.solfege);
       if (_history.length > 24) _history.removeAt(0);
     });
-    await _player.setAudioSource(_WavSource(_buildWav(note.noteName)));
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/flute_note.wav');
+    await file.writeAsBytes(_buildWav(note.noteName));
+    await _player.setFilePath(file.path);
     await _player.seek(Duration.zero);
     await _player.play();
     await Future.delayed(const Duration(milliseconds: 550));

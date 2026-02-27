@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../main.dart';
 import '../models/drill_lesson.dart';
 import '../models/drill_library.dart';
@@ -51,19 +53,6 @@ Uint8List _synthNoteWav(String noteName, double duration) {
   return b.buffer.asUint8List();
 }
 
-class _WavSrc extends StreamAudioSource {
-  final Uint8List _b;
-  _WavSrc(this._b) : super(tag: 'drill_preview');
-  @override
-  Future<StreamAudioResponse> request([int? start, int? end]) async {
-    start ??= 0; end ??= _b.length;
-    return StreamAudioResponse(
-      sourceLength: _b.length, contentLength: end - start,
-      offset: start, stream: Stream.value(_b.sublist(start, end)),
-      contentType: 'audio/wav',
-    );
-  }
-}
 
 class DrillListScreen extends ConsumerWidget {
   const DrillListScreen({super.key});
@@ -154,16 +143,21 @@ class _LessonCardState extends ConsumerState<_LessonCard> {
     final bpm = widget.lesson.bpm;
     final beatDuration = Duration(milliseconds: (60000 / bpm).round());
 
-    void playNext() {
+    Future<void> playNext() async {
       if (!_previewing || _previewBeat >= beats.length) {
         _stopPreview();
         return;
       }
       final beat = beats[_previewBeat];
       final wav = _synthNoteWav(beat.note, beat.duration.clamp(0.1, 0.8));
-      _player.setAudioSource(_WavSrc(wav)).then((_) {
-        _player.seek(Duration.zero).then((_) => _player.play());
-      });
+      try {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/preview_beat.wav');
+        await file.writeAsBytes(wav);
+        await _player.setFilePath(file.path);
+        await _player.seek(Duration.zero);
+        await _player.play();
+      } catch (_) {}
       setState(() => _previewBeat++);
       _previewTimer = Timer(beatDuration, playNext);
     }
