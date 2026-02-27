@@ -12,3 +12,7 @@
 
 # camera plugin
 -keep class io.flutter.plugins.camera.** { *; }
+
+# Play Core (Flutter deferred components - suppress missing class errors)
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
