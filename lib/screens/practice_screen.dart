@@ -23,7 +23,11 @@ class PracticeScreen extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => SessionResultScreen(result: next.result!),
+            builder: (_) => SessionResultScreen(
+              result: next.result!,
+              songTitle: next.currentSong.title,
+              audioPath: next.audioPath,
+            ),
           ),
         );
       }
@@ -74,6 +78,29 @@ class PracticeScreen extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: 20),
+            // 录音开关
+            if (session.state == RecordingState.idle)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Text('🎙 录制本次练习',
+                        style: TextStyle(
+                            color: KidColors.textMid,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    Switch(
+                      value: session.recordAudio,
+                      activeColor: KidColors.primary,
+                      onChanged: (v) => ref
+                          .read(practiceSessionProvider.notifier)
+                          .setRecordAudio(v),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
             _RecordButton(
               state: session.state,
               onStart: () {

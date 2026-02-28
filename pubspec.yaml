@@ -43,6 +43,9 @@ dependencies:
   # 视频播放
   video_player: ^2.8.6
 
+  # 持久化设置
+  shared_preferences: ^2.2.3
+
   # UI
   cupertino_icons: ^1.0.2
   intl: ^0.20.2

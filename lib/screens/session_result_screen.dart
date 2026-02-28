@@ -2,14 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../main.dart';
 import '../models/score_note.dart';
+import '../models/check_in_record.dart';
 import '../providers/practice_session_provider.dart';
+import '../services/check_in_storage.dart';
 
-class SessionResultScreen extends ConsumerWidget {
+class SessionResultScreen extends ConsumerStatefulWidget {
   final SessionResult result;
-  const SessionResultScreen({super.key, required this.result});
+  final String songTitle;
+  final String? audioPath;
+
+  const SessionResultScreen({
+    super.key,
+    required this.result,
+    required this.songTitle,
+    this.audioPath,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SessionResultScreen> createState() => _SessionResultScreenState();
+}
+
+class _SessionResultScreenState extends ConsumerState<SessionResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.audioPath != null) {
+      _saveCheckIn();
+    }
+  }
+
+  Future<void> _saveCheckIn() async {
+    final record = CheckInRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      createdAt: DateTime.now(),
+      filePath: widget.audioPath!,
+      type: 'audio',
+      score: widget.result.pitchScore,
+      songTitle: widget.songTitle,
+    );
+    await CheckInStorage().save(record);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KidColors.bg,
       appBar: AppBar(
@@ -24,7 +59,7 @@ class SessionResultScreen extends ConsumerWidget {
       body: Column(
         children: [
           const SizedBox(height: 8),
-          _ScoreSummary(result: result),
+          _ScoreSummary(result: widget.result),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -38,7 +73,19 @@ class SessionResultScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(child: _NoteList(judgements: result.judgements)),
+          Expanded(child: _NoteList(judgements: widget.result.judgements)),
+          if (widget.audioPath != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: KidColors.green, size: 16),
+                  const SizedBox(width: 6),
+                  const Text('已保存到我的打卡',
+                      style: TextStyle(color: KidColors.green, fontSize: 13)),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(20),
             child: SizedBox(

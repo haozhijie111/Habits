@@ -4,21 +4,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../main.dart';
 import '../models/drill_lesson.dart';
+import '../models/check_in_record.dart';
 import '../providers/drill_session_provider.dart';
+import '../services/check_in_storage.dart';
 
-class DrillResultScreen extends ConsumerWidget {
+class DrillResultScreen extends ConsumerStatefulWidget {
   final DrillResult result;
   final String? audioPath;
   const DrillResultScreen({super.key, required this.result, this.audioPath});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DrillResultScreen> createState() => _DrillResultScreenState();
+}
+
+class _DrillResultScreenState extends ConsumerState<DrillResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.audioPath != null) {
+      _saveCheckIn();
+    }
+  }
+
+  Future<void> _saveCheckIn() async {
+    final record = CheckInRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      createdAt: DateTime.now(),
+      filePath: widget.audioPath!,
+      type: 'audio',
+      score: widget.result.totalScore,
+      songTitle: widget.result.lesson.title,
+    );
+    await CheckInStorage().save(record);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KidColors.bg,
       appBar: AppBar(
         backgroundColor: KidColors.bg,
         automaticallyImplyLeading: false,
-        title: Text('🏆 ${result.lesson.title} 结果',
+        title: Text('🏆 ${widget.result.lesson.title} 结果',
             style: const TextStyle(
                 color: KidColors.textDark,
                 fontSize: 20,
@@ -28,15 +55,24 @@ class DrillResultScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _TrophyCard(result: result),
+            _TrophyCard(result: widget.result),
             const SizedBox(height: 20),
-            if (audioPath != null) ...[
-              _AudioPlayerCard(audioPath: audioPath!),
-              const SizedBox(height: 20),
+            if (widget.audioPath != null) ...[
+              _AudioPlayerCard(audioPath: widget.audioPath!),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: KidColors.green, size: 16),
+                  const SizedBox(width: 6),
+                  const Text('已保存到我的打卡',
+                      style: TextStyle(color: KidColors.green, fontSize: 13)),
+                ],
+              ),
+              const SizedBox(height: 12),
             ],
-            _BeatList(result: result),
+            _BeatList(result: widget.result),
             const SizedBox(height: 24),
-            _ActionButtons(result: result),
+            _ActionButtons(result: widget.result),
             const SizedBox(height: 16),
           ],
         ),
