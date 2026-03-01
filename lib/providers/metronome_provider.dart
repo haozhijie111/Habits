@@ -28,19 +28,20 @@ class MetronomeNotifier extends StateNotifier<MetronomeState> {
   static const _keyBpm     = 'metro_bpm';
 
   MetronomeNotifier(this._service) : super(const MetronomeState()) {
-    _service.init();
-    _loadPrefs();
+    _initAndLoadPrefs();
   }
 
-  Future<void> _loadPrefs() async {
+  Future<void> _initAndLoadPrefs() async {
+    // 先初始化音频，再加载偏好设置，避免音频未就绪时就触发播放
+    await _service.init();
     final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_keyEnabled) ?? false;
     final volume  = prefs.getDouble(_keyVolume) ?? 0.8;
     final bpm     = prefs.getInt(_keyBpm) ?? 80;
-    _service.setEnabled(enabled);
     _service.setVolume(volume);
     _service.setBpm(bpm);
-    state = MetronomeState(enabled: enabled, volume: volume, bpm: bpm);
+    // 不在启动时自动开启节拍器，避免app打开就发出声音
+    _service.setEnabled(false);
+    state = MetronomeState(enabled: false, volume: volume, bpm: bpm);
   }
 
   Future<void> _savePrefs() async {

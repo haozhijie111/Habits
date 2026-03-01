@@ -6,50 +6,166 @@ import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 import '../models/check_in_record.dart';
 import '../services/check_in_storage.dart';
+import '../providers/video_session_provider.dart';
 import '../main.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 final checkInRecordsProvider =
-    FutureProvider<List<CheckInRecord>>((ref) => CheckInStorage().loadAll());
+    FutureProvider.autoDispose<List<CheckInRecord>>((ref) => CheckInStorage().loadAll());
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-class MyScreen extends ConsumerWidget {
+class MyScreen extends ConsumerStatefulWidget {
   const MyScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyScreen> createState() => _MyScreenState();
+}
+
+class _MyScreenState extends ConsumerState<MyScreen> {
+  // 0=全部, 1=打卡, 2=专项, 3=练习
+  int _filterIndex = 0;
+
+  static const _filterLabels = ['全部', '打卡录音', '专项录音', '练习录音'];
+  static const _filterTypes = [
+    null,
+    ['checkin_video', 'checkin_audio'],
+    ['drill'],
+    ['practice'],
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 监听打卡完成事件，自动刷新列表
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listenManual(videoSessionProvider, (prev, next) {
+        if (next.state == VideoState.done) {
+          ref.invalidate(checkInRecordsProvider);
+        }
+      });
+    });
+  }
+
+  void _refresh() => ref.invalidate(checkInRecordsProvider);
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(checkInRecordsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('我的打卡')),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('加载失败: $e')),
-        data: (records) {
-          if (records.isEmpty) {
-            return const Center(
-              child: Text('还没有打卡记录\n去打卡页录制吧 🎵',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: KidColors.textMid)),
-            );
-          }
-          // 按日期分组
-          final grouped = <String, List<CheckInRecord>>{};
-          for (final r in records) {
-            final key = DateFormat('yyyy-MM-dd').format(r.createdAt);
-            grouped.putIfAbsent(key, () => []).add(r);
-          }
-          final dates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+      appBar: AppBar(
+        title: const Text('我的打卡'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '刷新',
+            onPressed: _refresh,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _FilterBar(
+            selectedIndex: _filterIndex,
+            labels: _filterLabels,
+            onSelected: (i) => setState(() => _filterIndex = i),
+          ),
+          Expanded(
+            child: async.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('加载失败: $e')),
+              data: (records) {
+                final types = _filterTypes[_filterIndex];
+                final filtered = types == null
+                    ? records
+                    : records.where((r) => types.contains(r.type)).toList();
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: dates.length,
-            itemBuilder: (ctx, i) {
-              final date = dates[i];
-              final dayRecords = grouped[date]!;
-              return _DateGroup(date: date, records: dayRecords, onDeleted: () {
-                ref.invalidate(checkInRecordsProvider);
-              });
-            },
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _filterIndex == 0
+                          ? '还没有打卡记录\n去打卡页录制吧 🎵'
+                          : '暂无${_filterLabels[_filterIndex]}记录',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: KidColors.textMid),
+                    ),
+                  );
+                }
+
+                // 按日期分组
+                final grouped = <String, List<CheckInRecord>>{};
+                for (final r in filtered) {
+                  final key = DateFormat('yyyy-MM-dd').format(r.createdAt);
+                  grouped.putIfAbsent(key, () => []).add(r);
+                }
+                final dates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+                return RefreshIndicator(
+                  onRefresh: () async => _refresh(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: dates.length,
+                    itemBuilder: (ctx, i) {
+                      final date = dates[i];
+                      final dayRecords = grouped[date]!;
+                      return _DateGroup(
+                        date: date,
+                        records: dayRecords,
+                        onDeleted: _refresh,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Filter Bar ────────────────────────────────────────────────────────────────
+class _FilterBar extends StatelessWidget {
+  final int selectedIndex;
+  final List<String> labels;
+  final ValueChanged<int> onSelected;
+
+  const _FilterBar({
+    required this.selectedIndex,
+    required this.labels,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      color: KidColors.bg,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        itemCount: labels.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final selected = i == selectedIndex;
+          return GestureDetector(
+            onTap: () => onSelected(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected ? KidColors.primary : KidColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                labels[i],
+                style: TextStyle(
+                  color: selected ? Colors.white : KidColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -92,19 +208,37 @@ class _RecordCard extends StatelessWidget {
 
   const _RecordCard({required this.record, required this.onDeleted});
 
+  String get _typeEmoji {
+    switch (record.type) {
+      case 'checkin_video': return '🎬';
+      case 'checkin_audio': return '🎙';
+      case 'drill':         return '🏋️';
+      case 'practice':      return '🎵';
+      default:              return '🎵';
+    }
+  }
+
+  Color get _typeColor {
+    switch (record.type) {
+      case 'checkin_video': return KidColors.primary;
+      case 'checkin_audio': return KidColors.secondary;
+      case 'drill':         return KidColors.purple;
+      case 'practice':      return KidColors.pink;
+      default:              return KidColors.secondary;
+    }
+  }
+
+  bool get _isVideo => record.type == 'checkin_video';
+
   @override
   Widget build(BuildContext context) {
     final time = DateFormat('HH:mm').format(record.createdAt);
-    final isVideo = record.type == 'video';
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isVideo
-              ? KidColors.primary.withValues(alpha: 0.15)
-              : KidColors.secondary.withValues(alpha: 0.15),
-          child: Text(isVideo ? '🎬' : '🎵',
-              style: const TextStyle(fontSize: 20)),
+          backgroundColor: _typeColor.withValues(alpha: 0.15),
+          child: Text(_typeEmoji, style: const TextStyle(fontSize: 20)),
         ),
         title: Text(record.songTitle,
             style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -130,7 +264,7 @@ class _RecordCard extends StatelessWidget {
   }
 
   void _openPlayer(BuildContext context) {
-    if (record.type == 'video') {
+    if (_isVideo) {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => _VideoPlayerPage(record: record)));
     } else {

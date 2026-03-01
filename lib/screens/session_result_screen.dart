@@ -36,7 +36,7 @@ class _SessionResultScreenState extends ConsumerState<SessionResultScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       createdAt: DateTime.now(),
       filePath: widget.audioPath!,
-      type: 'audio',
+      type: 'practice',
       score: widget.result.pitchScore,
       songTitle: widget.songTitle,
     );

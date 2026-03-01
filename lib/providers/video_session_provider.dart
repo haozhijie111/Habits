@@ -63,6 +63,12 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
     if (state.mode == CheckInMode.video) {
       await _video.startRecording();
     } else {
+      // 检查并请求麦克风权限
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!hasPermission) {
+        state = state.copyWith(state: VideoState.error, errorMsg: '需要麦克风权限才能录音');
+        return;
+      }
       final dir = await getTemporaryDirectory();
       final path = p.join(dir.path, 'checkin_${DateTime.now().millisecondsSinceEpoch}.m4a');
       await _audioRecorder.start(
@@ -87,7 +93,7 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
           id: now.millisecondsSinceEpoch.toString(),
           createdAt: now,
           filePath: audioPath,
-          type: 'audio',
+          type: 'checkin_audio',
           score: score,
           songTitle: _songTitle,
         ));
@@ -121,7 +127,7 @@ class VideoSessionNotifier extends StateNotifier<VideoSession> {
         id: now.millisecondsSinceEpoch.toString(),
         createdAt: now,
         filePath: out,
-        type: 'video',
+        type: 'checkin_video',
         score: score,
         songTitle: _songTitle,
       ));

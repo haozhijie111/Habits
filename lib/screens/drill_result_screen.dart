@@ -31,7 +31,7 @@ class _DrillResultScreenState extends ConsumerState<DrillResultScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       createdAt: DateTime.now(),
       filePath: widget.audioPath!,
-      type: 'audio',
+      type: 'drill',
       score: widget.result.totalScore,
       songTitle: widget.result.lesson.title,
     );
