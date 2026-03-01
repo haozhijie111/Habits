@@ -48,42 +48,48 @@ class SongLibrary {
     ],
   );
 
-  // ── 2. 新年好（C调，竹笛筒音作5）────────────────────────────────────────────
-  // 原谱：5 3 5 | 5 3 5 | 6 6 6 5 6 | 5 - - |
-  //       5 5 6 5 | 3 - - | 4 4 4 3 4 | 3 - - |
+  // ── 2. 新年好（C调，竹笛筒音作5，3/4拍）────────────────────────────────────
+  // 谱：5 3 5 | 5 3 5 | 6 6 6 5 6 | 5 - - |
+  //     5 5 6 5 | 3 - - | 4 4 4 3 4 | 3 - - |
+  // bpm=100，每拍=0.6s，每小节=1.8s
+  // C调：1=C4 2=D4 3=E4 4=F4 5=G4 6=A4 7=B4
   static const happyNewYear = Song(
     id: 'happy_new_year',
     title: '新年好',
     emoji: '🎉',
     bpm: 100,
     notes: [
-      // 第一句：5 3 5 5 3 5
-      ScoreNote(time: 0.0,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 0.5,  note: 'E4', duration: 0.5),
-      ScoreNote(time: 1.0,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 1.5,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 2.0,  note: 'E4', duration: 0.5),
-      ScoreNote(time: 2.5,  note: 'G4', duration: 0.5),
-      // 第二句：6 6 6 5 6 5 -
-      ScoreNote(time: 3.0,  note: 'A4', duration: 0.33),
-      ScoreNote(time: 3.33, note: 'A4', duration: 0.33),
-      ScoreNote(time: 3.66, note: 'A4', duration: 0.34),
-      ScoreNote(time: 4.0,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 4.5,  note: 'A4', duration: 0.5),
-      ScoreNote(time: 5.0,  note: 'G4', duration: 1.0),
-      // 第三句：5 5 6 5 3 -
-      ScoreNote(time: 6.0,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 6.5,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 7.0,  note: 'A4', duration: 0.5),
-      ScoreNote(time: 7.5,  note: 'G4', duration: 0.5),
-      ScoreNote(time: 8.0,  note: 'E4', duration: 1.0),
-      // 第四句：4 4 4 3 4 3 -
-      ScoreNote(time: 9.0,  note: 'F4', duration: 0.33),
-      ScoreNote(time: 9.33, note: 'F4', duration: 0.33),
-      ScoreNote(time: 9.66, note: 'F4', duration: 0.34),
-      ScoreNote(time: 10.0, note: 'E4', duration: 0.5),
-      ScoreNote(time: 10.5, note: 'F4', duration: 0.5),
-      ScoreNote(time: 11.0, note: 'E4', duration: 1.0),
+      // 小节1：5 3 5
+      ScoreNote(time: 0.0,  note: 'G4', duration: 0.6),
+      ScoreNote(time: 0.6,  note: 'E4', duration: 0.6),
+      ScoreNote(time: 1.2,  note: 'G4', duration: 0.6),
+      // 小节2：5 3 5
+      ScoreNote(time: 1.8,  note: 'G4', duration: 0.6),
+      ScoreNote(time: 2.4,  note: 'E4', duration: 0.6),
+      ScoreNote(time: 3.0,  note: 'G4', duration: 0.6),
+      // 小节3：6 6 6 5 6（一拍三连音 + 两个四分音符）
+      ScoreNote(time: 3.6,  note: 'A4', duration: 0.2),
+      ScoreNote(time: 3.8,  note: 'A4', duration: 0.2),
+      ScoreNote(time: 4.0,  note: 'A4', duration: 0.2),
+      ScoreNote(time: 4.2,  note: 'G4', duration: 0.6),
+      ScoreNote(time: 4.8,  note: 'A4', duration: 0.6),
+      // 小节4：5 - -（附点二分音符）
+      ScoreNote(time: 5.4,  note: 'G4', duration: 1.8),
+      // 小节5：5 5 6 5
+      ScoreNote(time: 7.2,  note: 'G4', duration: 0.6),
+      ScoreNote(time: 7.8,  note: 'G4', duration: 0.6),
+      ScoreNote(time: 8.4,  note: 'A4', duration: 0.6),
+      ScoreNote(time: 9.0,  note: 'G4', duration: 0.6),
+      // 小节6：3 - -
+      ScoreNote(time: 9.6,  note: 'E4', duration: 1.8),
+      // 小节7：4 4 4 3 4（一拍三连音 + 两个四分音符）
+      ScoreNote(time: 11.4, note: 'F4', duration: 0.2),
+      ScoreNote(time: 11.6, note: 'F4', duration: 0.2),
+      ScoreNote(time: 11.8, note: 'F4', duration: 0.2),
+      ScoreNote(time: 12.0, note: 'E4', duration: 0.6),
+      ScoreNote(time: 12.6, note: 'F4', duration: 0.6),
+      // 小节8：3 - -
+      ScoreNote(time: 13.2, note: 'E4', duration: 1.8),
     ],
   );
 
