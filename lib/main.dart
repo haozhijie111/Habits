@@ -78,14 +78,14 @@ class FluteApp extends StatelessWidget {
 }
 
 // ── 主导航壳 ──────────────────────────────────────────────────────────────────
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
 
   static const _pages = [
@@ -96,13 +96,21 @@ class _MainShellState extends State<MainShell> {
     MyScreen(),
   ];
 
+  void _onTabSelected(int i) {
+    // 切换到"我的"tab 时自动刷新列表
+    if (i == 4) {
+      ref.invalidate(checkInRecordsProvider);
+    }
+    setState(() => _index = i);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _onTabSelected,
         backgroundColor: KidColors.card,
         indicatorColor: KidColors.primary.withValues(alpha: 0.15),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

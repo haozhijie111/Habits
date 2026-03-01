@@ -6,7 +6,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 import '../models/check_in_record.dart';
 import '../services/check_in_storage.dart';
-import '../providers/video_session_provider.dart';
 import '../main.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -32,19 +31,6 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     ['drill'],
     ['practice'],
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    // 监听打卡完成事件，自动刷新列表
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listenManual(videoSessionProvider, (prev, next) {
-        if (next.state == VideoState.done) {
-          ref.invalidate(checkInRecordsProvider);
-        }
-      });
-    });
-  }
 
   void _refresh() => ref.invalidate(checkInRecordsProvider);
 

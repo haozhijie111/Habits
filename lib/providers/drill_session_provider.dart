@@ -213,32 +213,29 @@ class DrillSessionNotifier extends StateNotifier<DrillSession> {
     });
   }
 
-  void _finishRecording() {
+  Future<void> _finishRecording() async {
     _ticker?.cancel();
     _pitchSub?.cancel();
     _metronome.stop();
     _audio.stop();
-    _stopFileRecording();
+
+    String? audioPath;
+    if (state.recordAudio) {
+      audioPath = await _recorder.stop();
+    }
 
     final result = _comparator?.evaluate();
     state = state.copyWith(
       state: DrillState.finished,
       result: result,
+      audioPath: audioPath,
     );
-  }
-
-  Future<void> _stopFileRecording() async {
-    if (!state.recordAudio) return;
-    final path = await _recorder.stop();
-    if (path != null) {
-      state = state.copyWith(audioPath: path);
-    }
   }
 
   Future<void> stopEarly() async {
     _countdownTimer?.cancel();
     _metronome.stop();
-    _finishRecording();
+    await _finishRecording();
   }
 
   void reset() {
